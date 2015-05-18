@@ -38,7 +38,7 @@ class ofApp : public ofBaseApp{
 		bool dispRaw;
 
 		State state;
-		float curTime;
-		float prevTime;
+		//float curTime;
+		//float prevTime;
 		
 };

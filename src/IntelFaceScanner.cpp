@@ -83,11 +83,6 @@ void IntelFaceScanner::open()
         ofLogError("IntelFaceScanner") << "Error: Enable3DScan failed (" << result << ")";
 		return;
     }
-    scanner = senseManager->Query3DScan();
-    if (!scanner) {
-		ofLogError("IntelFaceScanner") << "3DScan module unavailable";
-		return;
-	}
 
 	// Initialize the pipeline
 	pxcStatus status = senseManager->Init();
@@ -99,7 +94,6 @@ void IntelFaceScanner::open()
 		bSenseManagerInited = true;
 	}
 
-	// IF IVCAM Set the following properties
 	PXCCapture::DeviceInfo device_info;
 	//PXCCapture::Device *device = senseManager->QueryCaptureManager()->QueryDevice();   
  //   senseManager->QueryCaptureManager()->QueryDevice()->QueryDeviceInfo(&device_info);
@@ -114,6 +108,13 @@ void IntelFaceScanner::open()
 	maxRangeValue  = senseManager->QueryCaptureManager()->QueryDevice()->QueryDepthSensorRange().max;
     senseManager->QueryCaptureManager()->QueryCapture()->QueryDeviceInfo(0, &device_info);
     ofLogNotice("IntelFaceScanner") << "Camera: "<< device_info.name << " Firmware: "<<  device_info.firmware[0] <<"."<<  device_info.firmware[1] << "." << device_info.firmware[2] << "." <<  device_info.firmware[3];
+
+	// Get Mesh Capture module instance (do not release, resources handled by SenseManager)
+	scanner = senseManager->Query3DScan();
+    if (!scanner) {
+		ofLogError("IntelFaceScanner") << "3DScan module unavailable";
+		return;
+	}
 
 	// Report the resulting profile
   //  {
@@ -134,6 +135,21 @@ void IntelFaceScanner::open()
   //      }
   //  }
 
+	// Configure the system
+    PXC3DScan::Configuration config = scanner->QueryConfiguration();
+	config.mode = PXC3DScan::FACE;
+	//config.options = config.options | PXC3DScan::SOLIDIFICATION;
+	config.minFramesBeforeScanStart = 50;
+
+    result = scanner->SetConfiguration(config);
+    if (result != PXC_STATUS_NO_ERROR)
+    {
+        ofLogError("IntelFaceScanner") << "Error: scanner->SetConfiguration() failed. Error = " << result;
+		return;
+    }
+
+	scanningFramesRemaining = 50;
+
 }
 
 //--------------------------------------------------------------
@@ -149,17 +165,17 @@ void IntelFaceScanner::setup()
 
 //--------------------------------------------------------------
 void IntelFaceScanner::startScan() {
-	lock();
-		bDoScan = true;
-	unlock();
+	//lock();
+	//	bDoScan = true;
+	//unlock();
 
 }
 
 //--------------------------------------------------------------
 void IntelFaceScanner::stopScan() {
-	lock();
-		bDoRender = true;
-	unlock();
+	//lock();
+	//	bDoRender = true;
+	//unlock();
 
 }
 
@@ -170,7 +186,6 @@ void IntelFaceScanner::renderScan()
     WCHAR* pUserProfilePath;
     _wdupenv_s(&pUserProfilePath, &unused, L"USERPROFILE");
     const PXC3DScan::FileFormat format = PXC3DScan::PLY; // OBJ, PLY or STL
-	const PXC3DScan::ReconstructionOption reconstructionOptions = PXC3DScan::NO_RECONSTRUCTION_OPTIONS;
     const pxcCHAR* ext = PXC3DScan::FileFormatToString(format);
     const size_t FSIZE = 4096;
     WCHAR filename[FSIZE];
@@ -180,19 +195,24 @@ void IntelFaceScanner::renderScan()
     // If applicable, reconstruct the 3D Mesh to the specific file/format
 	pxcStatus result = PXC_STATUS_NO_ERROR;
     bool bMeshSaved = false;
-    if (scanner->QueryMode() == PXC3DScan::SCANNING)
+    if (scanner->IsScanning())
     {
         wprintf_s(L"Generating %s...", filename);
-        result = scanner->Reconstruct(format, filename, reconstructionOptions);
+        result = scanner->Reconstruct(format, filename);
         if (result >= PXC_STATUS_NO_ERROR)
         {
             bMeshSaved = true;
             wprintf_s(L"done.\n");
         }
-        else if (result == PXC_STATUS_FEATURE_UNSUPPORTED) wprintf_s(L"SOLIDIFICATION requires write access to current working directory in this release. See release notes for details.\n", filename);
-        else if (result == PXC_STATUS_FILE_WRITE_FAILED) wprintf_s(L"the file could not be created using the provided file path.\n", filename);
-        else if (result == PXC_STATUS_ITEM_UNAVAILABLE) wprintf_s(L"save aborted due to empty scanning volume.\n", filename);
-        else if (result < 0)
+		else if (result == PXC_STATUS_FILE_WRITE_FAILED)
+        {
+            wprintf_s(L"the file could not be created using the provided path. Aborting.\n");
+        }
+        else if (result == PXC_STATUS_ITEM_UNAVAILABLE || result == PXC_STATUS_DATA_UNAVAILABLE)
+        {
+            wprintf_s(L"no scan data found. Aborting.\n");
+        }
+        else if (result < PXC_STATUS_NO_ERROR)
         {
             wprintf_s(L"\nError: Reconstruct returned %d\n", result);
         }
@@ -204,7 +224,7 @@ void IntelFaceScanner::renderScan()
 void IntelFaceScanner::threadedFunction(){
 	pxcStatus result;
 
-	while(isThreadRunning())
+	while ((scanningFramesRemaining) && (isThreadRunning()))
 	{
 
 		pxcStatus status = senseManager->AcquireFrame(true);
@@ -212,12 +232,21 @@ void IntelFaceScanner::threadedFunction(){
 		{
 			if (status < PXC_STATUS_NO_ERROR)  {				
 				ofLogError() << "Error with Sensemanager...! status=" << status;
-				stopThread();
+				return;
 			}
 			frameCounter++;
 
 		}
 
+		if (scanner->IsScanning())
+        {
+			if(!bDoScan) {
+				bDoScan = true;
+				ofNotifyEvent(scanningStartedEvent,this);
+				ofLogNotice("IntelFaceScanner") << "Scanning started... frame:" << frameCounter;
+			}
+            scanningFramesRemaining--;
+		}
 		// Get the preview image for this frame
         PXCImage* preview_image = scanner->AcquirePreviewImage();
 
@@ -227,45 +256,16 @@ void IntelFaceScanner::threadedFunction(){
 			updateBitmap(preview_image);
 			preview_image->Release();
 		}
-		
-		lock();
-		if(bDoScan) {
-			if(scanner->QueryMode() == PXC3DScan::TARGETING) {	
-				result = scanner->SetMode(PXC3DScan::SCANNING);
-				if (result != PXC_STATUS_ITEM_UNAVAILABLE)
-				{
-					ofNotifyEvent(scanningStartedEvent,this);
-					ofLogNotice("IntelFaceScanner") << "Scanning started... frame:" << frameCounter;
-					curframeCounter = frameCounter;
-				}
-				else {
-					ofLogError("IntelFaceScanner") << "Failed to start scanning. Error = " << result;
-				}
-			}
 
-			bDoScan = false;
-
-		}
-		if(bDoRender) {
-			if(scanner->QueryMode() == PXC3DScan::SCANNING) {
-				ofLogNotice("IntelFaceScanner") << "Rendering scan... frame:" << frameCounter;
-				renderScan();
-
-				result = scanner->SetMode(PXC3DScan::TARGETING);
-				if (result != PXC_STATUS_ITEM_UNAVAILABLE)
-				{
-					ofLogNotice("IntelFaceScanner") << "Scanning stopped... frame:" << frameCounter;
-					curframeCounter = frameCounter;
-					ofNotifyEvent(scanningDoneEvent,this);
-				}
-				else {
-					ofLogError("IntelFaceScanner") << "Failed to stop scanning. Error = " << result;
-				}
-				bDoRender = false;
-			}
-		}
-		unlock();
 	}
+
+
+	ofLogNotice("IntelFaceScanner") << "Rendering scan... frame:" << frameCounter;
+	renderScan();
+	ofLogNotice("IntelFaceScanner") << "Scanning stopped... frame:" << frameCounter;
+	curframeCounter = frameCounter;
+	ofNotifyEvent(scanningDoneEvent,this);
+
 }
 
 //--------------------------------------------------------------
@@ -294,7 +294,7 @@ void IntelFaceScanner::update()
 //--------------------------------------------------------------
 void IntelFaceScanner::draw(float x, float y) 
 {
-		texture.draw(x,y,640,480);
+	texture.draw(x,y,640,480);
 }
 
 //--------------------------------------------------------------

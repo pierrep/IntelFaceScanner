@@ -37,6 +37,8 @@ protected:
 	int					curframeCounter;
 	bool				bDoRender;
 	bool				bDoScan;
+	int					scanningFramesRemaining;
+
 private:
 	pxcCHAR* 			device_name;
 	PXCSession*			session;

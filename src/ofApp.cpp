@@ -17,6 +17,7 @@ void ofApp::setup(){
 	ofAddListener(scanner->scanningStartedEvent,this,&ofApp::onScanningStarted);
 	ofAddListener(scanner->scanningDoneEvent,this,&ofApp::onScanningDone);
 
+	scanner->startScan();
 }
 
 //--------------------------------------------------------------
@@ -28,15 +29,16 @@ void ofApp::update(){
 		scanner = NULL;
 		setup();
 		state = PREVIEW;
+		//scanner->startScan();
 	}
 
-	if(state == SCANNING) {
-		curTime = ofGetElapsedTimeMillis();
-		if((curTime - prevTime) > 1000) {
-			scanner->stopScan();
-			state = IDLE;
-		}				
-	}
+	//if(state == SCANNING) {
+	//	curTime = ofGetElapsedTimeMillis();
+	//	if((curTime - prevTime) > 5000) {
+	//		scanner->stopScan();
+	//		state = IDLE;
+	//	}				
+	//}
 
 	if(scanner) {
 		scanner->update();
@@ -77,7 +79,6 @@ void ofApp::draw(){
 		scanner->draw(0,0,ofGetWidth(),ofGetHeight());
 	}
 
-
 	ofDrawBitmapString(getStateAsString(),20,ofGetHeight()-80);
 	ofDrawBitmapString(ofToString(ofGetFrameRate()),20,ofGetHeight()-40);
 }
@@ -86,7 +87,7 @@ void ofApp::draw(){
 void ofApp::onScanningStarted()
 {
 	cout << "scan started" << endl;
-	curTime = prevTime = ofGetElapsedTimeMillis();
+	//curTime = prevTime = ofGetElapsedTimeMillis();
 	state = SCANNING;
 }
 
@@ -100,18 +101,6 @@ void ofApp::onScanningDone()
 }
 
 //--------------------------------------------------------------
-void ofApp::keyPressed(int key){
-	if(key == ' ') {
-		if(state == RENDER) {
-			state = RESET;
-		}
-		else if(state == PREVIEW) {
-			scanner->startScan();
-		} 
-	}
-}
-
-
 void ofApp::loadPointCloud()
 {
 	dispRaw = false;
@@ -142,6 +131,18 @@ void ofApp::loadPointCloud()
 
 	mesh = ofxPCL::toOF(cloud);
 	cloud.reset();
+}
+
+//--------------------------------------------------------------
+void ofApp::keyPressed(int key){
+	if(key == ' ') {
+		if(state == RENDER) {
+			state = RESET;
+		}
+		else if(state == PREVIEW) {
+			//scanner->startScan();
+		} 
+	}
 }
 
 //--------------------------------------------------------------
@@ -192,5 +193,5 @@ string ofApp::getStateAsString()
 	if(state == SCANNING) return "Scanning";
 	if(state == PROCESS) return "Process";
 	if(state == RENDER) return "Render";
-
+	return "NullState";
 }
