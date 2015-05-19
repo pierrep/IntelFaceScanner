@@ -242,7 +242,7 @@ void IntelFaceScanner::threadedFunction(){
         {
 			if(!bDoScan) {
 				bDoScan = true;
-				ofNotifyEvent(scanningStartedEvent,this);
+				//ofNotifyEvent(scanningStartedEvent,this);
 				ofLogNotice("IntelFaceScanner") << "Scanning started... frame:" << frameCounter;
 			}
             scanningFramesRemaining--;
@@ -261,6 +261,7 @@ void IntelFaceScanner::threadedFunction(){
 
 
 	ofLogNotice("IntelFaceScanner") << "Rendering scan... frame:" << frameCounter;
+	ofNotifyEvent(scanningStartedEvent,this);
 	renderScan();
 	ofLogNotice("IntelFaceScanner") << "Scanning stopped... frame:" << frameCounter;
 	curframeCounter = frameCounter;

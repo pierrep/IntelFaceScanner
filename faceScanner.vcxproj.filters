@@ -28,6 +28,12 @@
     <ClCompile Include="src\IntelFaceScanner.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="src\ofxParticle3D.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MeshLoader.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">
@@ -75,6 +81,12 @@
       <Filter>addons\ofxXmlSettings\libs</Filter>
     </ClInclude>
     <ClInclude Include="src\IntelFaceScanner.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ofxParticle3D.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MeshLoader.h">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>

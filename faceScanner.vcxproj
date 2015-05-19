@@ -104,6 +104,8 @@
     <ClCompile Include="..\..\..\addons\ofxXmlSettings\libs\tinyxml.cpp" />
     <ClCompile Include="..\..\..\addons\ofxXmlSettings\libs\tinyxmlerror.cpp" />
     <ClCompile Include="..\..\..\addons\ofxXmlSettings\libs\tinyxmlparser.cpp" />
+    <ClCompile Include="src\ofxParticle3D.cpp" />
+    <ClCompile Include="src\MeshLoader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\IntelFaceScanner.h" />
@@ -114,6 +116,8 @@
     <ClInclude Include="..\..\..\addons\ofxPCL\src\Utility.h" />
     <ClInclude Include="..\..\..\addons\ofxXmlSettings\src\ofxXmlSettings.h" />
     <ClInclude Include="..\..\..\addons\ofxXmlSettings\libs\tinyxml.h" />
+    <ClInclude Include="src\ofxParticle3D.h" />
+    <ClInclude Include="src\MeshLoader.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\libs\openFrameworksCompiled\project\vs\openframeworksLib.vcxproj">
