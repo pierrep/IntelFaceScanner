@@ -32,7 +32,7 @@ class ofApp : public ofBaseApp{
 		string getStateAsString();
 		void loadPointCloud();
 		void renderFace();
-		
+		void renderFaces();
 		void onScanningStarted();
 		void onScanningDone();
 		void onMeshLoaded();
@@ -51,15 +51,25 @@ class ofApp : public ofBaseApp{
 		ofImage	logo;
 		ofImage	spinner;
 		ofTrueTypeFont font;
+		bool	bDebugInfo;
 
 		MeshLoader meshLoader;
 		pcl::PolygonMesh* polymesh;
 
 		ofFbo fbo;
 
-		vector<ofImage>	faces;
-		bool captureFace;
+
 		float curTime;
 		float prevTime;
+		float curFrame;
+		float prevFrame;
+
+		struct Face {
+				int x;
+				int y;
+				ofMesh mesh;
+		};
+
+		vector<Face> faces;
 		
 };

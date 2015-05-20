@@ -190,7 +190,7 @@ void IntelFaceScanner::renderScan()
     const size_t FSIZE = 4096;
     WCHAR filename[FSIZE];
     //swprintf_s(filename, FSIZE, L"%s\\Documents\\Pierre3dscan.%s", pUserProfilePath, ext);
-    swprintf_s(filename, FSIZE, L".\\data\\Pierre3dscan.%s", ext);
+    swprintf_s(filename, FSIZE, L".\\data\\3dscan.%s", ext);
 
     // If applicable, reconstruct the 3D Mesh to the specific file/format
 	pxcStatus result = PXC_STATUS_NO_ERROR;
