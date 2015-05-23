@@ -12,6 +12,7 @@ ofApp::~ofApp()
 void ofApp::setup(){	
 	ofBackground(50,50,50);
 	cam.enableOrtho();
+	ofHideCursor();
 	//cam.setOrientation(ofVec3f(0,-180,0));
 	fbo.allocate(ofGetWidth(),ofGetHeight());
 
@@ -57,9 +58,9 @@ void ofApp::update(){
 
 	if(state == RESET) {
 		cleanupScanner();
-		setupScanner();
+		//setupScanner();
 		if(polymesh) delete polymesh;
-		state = PREVIEW;
+		state = SETUP;
 	}
 	else if(state == PROCESS) {
 		polymesh = new pcl::PolygonMesh();
@@ -89,40 +90,19 @@ void ofApp::draw()
 {
 	ofBackground(0);
 	renderFaces();
-
-	if(state == RENDER) 
-	{
-		//if(captureFace) 
-		//{
-		//	curFrame = ofGetFrameNum();
-		//	if((curFrame - prevFrame) < 3)
-		//	{
-		//		fbo.begin();
-		//			ofBackground(0);
-		//			renderFace();
-		//		fbo.end();
-		//		
-		//		//ofPixels p;
-		//		//fbo.readToPixels(p);
-		//		//ofSaveImage(p,"screeny" + ofToString(ofGetFrameNum()) + ".png");
-		//	}
-		//	else {
-		//		captureFace = false;
-		//	}
-		//}
-		//fbo.draw(0,0);
-	}
 	
 	if(state == SETUP)
 	{
-		if(ofGetFrameNum() < 300) {
-			logo.draw(ofGetWidth()/2.0f,ofGetHeight()/2.0f);
-		}
-		else
+		//if(ofGetFrameNum() < 300)
 		{
+			ofBackground(50,50,50);
+			logo.draw(ofGetWidth()/2.0f,ofGetHeight()/2.0f);
+		//}
+		//else
+		//{
 			string s = "PRESS SPACEBAR TO BEGIN SCANNING";
 			float w = font.stringWidth(s);
-			font.drawString(s,ofGetWidth()/2.0f - w/2.0f,ofGetHeight()/2.0f);
+			font.drawString(s,ofGetWidth()/2.0f - w/2.0f,ofGetHeight() - 100.0f);
 		}
 	} 
 	else if((state == SCANNING) || (state == PROCESS) || (state == LOADING)) {		
@@ -137,6 +117,7 @@ void ofApp::draw()
 		//font.drawString(s,ofGetWidth()/2 - w/2.0f,ofGetHeight()/2);
 	}
 	else if((state == PREVIEW) || (state == SCANNING)) {
+		ofBackground(50,50,50);
 		scanner->draw(0,0,ofGetWidth(),ofGetHeight());
 	}
 
@@ -180,6 +161,7 @@ void ofApp::renderFaces()
 		ofTranslate(faces[i].x,faces[i].y,1100);
 		ofScale(5000, 5000, 5000);
 		ofRotateX(-90);
+		ofRotateZ(30);
 		glEnable(GL_DEPTH_TEST);
 		faces[i].mesh.draw(OF_MESH_POINTS);
 		ofPopMatrix();
@@ -225,7 +207,7 @@ void ofApp::loadPointCloud()
 	<< " data points (" << pcl::getFieldsList (*cloud) << ")." << endl;
 	
 	//ofxPCL::downsample(cloud, ofVec3f(0.005f, 0.005f, 0.005f));
-	//ofxPCL::statisticalOutlierRemoval(cloud, 50, 1.0);
+	ofxPCL::statisticalOutlierRemoval(cloud, 50, 1.0);
 
 	std::cerr << "PointCloud after filtering: " << cloud->width * cloud->height 
 	<< " data points (" << pcl::getFieldsList (*cloud) << ")." << endl;

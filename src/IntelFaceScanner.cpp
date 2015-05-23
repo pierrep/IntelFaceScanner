@@ -109,7 +109,27 @@ void IntelFaceScanner::open()
     senseManager->QueryCaptureManager()->QueryCapture()->QueryDeviceInfo(0, &device_info);
     ofLogNotice("IntelFaceScanner") << "Camera: "<< device_info.name << " Firmware: "<<  device_info.firmware[0] <<"."<<  device_info.firmware[1] << "." << device_info.firmware[2] << "." <<  device_info.firmware[3];
 
-	// Get Mesh Capture module instance (do not release, resources handled by SenseManager)
+	setupScanner();
+
+	scanningFramesRemaining = 50;
+
+}
+
+//--------------------------------------------------------------
+void IntelFaceScanner::setup()
+{
+
+	open();
+
+	bDeviceConnected = true;	
+	ofLogNotice("IntelFaceScanner") << "Device connected, starting thread.";
+	startThread();
+}
+
+//--------------------------------------------------------------
+void IntelFaceScanner::setupScanner()
+{
+		// Get Mesh Capture module instance (do not release, resources handled by SenseManager)
 	scanner = senseManager->Query3DScan();
     if (!scanner) {
 		ofLogError("IntelFaceScanner") << "3DScan module unavailable";
@@ -141,26 +161,12 @@ void IntelFaceScanner::open()
 	//config.options = config.options | PXC3DScan::SOLIDIFICATION;
 	config.minFramesBeforeScanStart = 50;
 
-    result = scanner->SetConfiguration(config);
+    pxcStatus result = scanner->SetConfiguration(config);
     if (result != PXC_STATUS_NO_ERROR)
     {
         ofLogError("IntelFaceScanner") << "Error: scanner->SetConfiguration() failed. Error = " << result;
 		return;
     }
-
-	scanningFramesRemaining = 50;
-
-}
-
-//--------------------------------------------------------------
-void IntelFaceScanner::setup()
-{
-
-	open();
-
-	bDeviceConnected = true;	
-	ofLogNotice("IntelFaceScanner") << "Device connected, starting thread.";
-	startThread();
 }
 
 //--------------------------------------------------------------

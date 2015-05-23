@@ -15,6 +15,7 @@ public:
 	void				update();
 	void				draw(float x, float y);
 	void				draw(float x, float y, float w, float h);
+	void				setupScanner();
 	void				startScan();
 	void				stopScan();
 	void				renderScan();
