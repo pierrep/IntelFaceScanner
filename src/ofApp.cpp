@@ -163,7 +163,7 @@ void ofApp::renderFaces()
 		ofRotateX(-90);
 		ofRotateZ(30);
 		glEnable(GL_DEPTH_TEST);
-		faces[i].mesh.draw(OF_MESH_POINTS);
+		faces[i].mesh.draw(OF_MESH_WIREFRAME);
 		ofPopMatrix();
 	}
 	cam.end();
@@ -193,7 +193,8 @@ void ofApp::loadPointCloud()
 	dispRaw = false;
 	
 	ofxPCL::PointCloud cloud(new ofxPCL::PointCloud::element_type);
-	
+	ofxPCL::PointNormalPointCloud cloud_with_normals(new ofxPCL::PointNormalPointCloud::element_type);
+
 	//pcl::PolygonMesh polymesh2;
 	//cout << "loading PLY file..." << endl;
 	//int result = pcl::io::load( ofToDataPath("Pierre3dscan.ply"),polymesh2);
@@ -206,17 +207,20 @@ void ofApp::loadPointCloud()
 	std::cerr << "PointCloud before filtering: " << cloud->width * cloud->height 
 	<< " data points (" << pcl::getFieldsList (*cloud) << ")." << endl;
 	
-	//ofxPCL::downsample(cloud, ofVec3f(0.005f, 0.005f, 0.005f));
 	ofxPCL::statisticalOutlierRemoval(cloud, 50, 1.0);
+	ofxPCL::downsample(cloud, ofVec3f(0.005f, 0.005f, 0.005f));
 
-	std::cerr << "PointCloud after filtering: " << cloud->width * cloud->height 
-	<< " data points (" << pcl::getFieldsList (*cloud) << ")." << endl;
+	ofxPCL::normalEstimation(cloud, cloud_with_normals);
+
+	//mesh = ofxPCL::triangulate(cloud_with_normals, 0.025);
+
+	std::cerr << "PointCloud after filtering: " << cloud->width * cloud->height << " data points (" << pcl::getFieldsList (*cloud) << ")." << endl;
 	
 	//ofxPCL::savePointCloud("table_scene_lms400_downsampled.pcd", cloud);
 	Face newface;
 	newface.x = 0;
 	newface.y = 0;
-	newface.mesh = ofxPCL::toOF(cloud);
+	newface.mesh = ofxPCL::triangulate(cloud_with_normals, 0.025);//ofxPCL::toOF(cloud);
 
 	newface.mesh.getColors().resize(newface.mesh.getNumVertices());
 
@@ -231,7 +235,7 @@ void ofApp::loadPointCloud()
 	}
 	cout << "min =" << min << endl;
 	//newface.mesh.setUsage( GL_DYNAMIC_DRAW );
-	newface.mesh.setMode(OF_PRIMITIVE_POINTS);
+	newface.mesh.setMode(OF_PRIMITIVE_TRIANGLES);
 	newface.mesh.enableColors();
 
 	faces.push_back(newface);
