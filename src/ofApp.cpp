@@ -25,6 +25,7 @@ void ofApp::setup(){
 	ofAddListener(meshLoader.meshLoadedEvent,this,&ofApp::onMeshLoaded);
 	polymesh = NULL;
 	bDebugInfo = false;
+	bDrawWireFrame = true;
 	state = SETUP;
 }
 
@@ -190,29 +191,21 @@ void ofApp::renderFace()
 //--------------------------------------------------------------
 void ofApp::loadPointCloud()
 {
-	dispRaw = false;
 	
 	ofxPCL::PointCloud cloud(new ofxPCL::PointCloud::element_type);
 	ofxPCL::PointNormalPointCloud cloud_with_normals(new ofxPCL::PointNormalPointCloud::element_type);
 
-	//pcl::PolygonMesh polymesh2;
-	//cout << "loading PLY file..." << endl;
-	//int result = pcl::io::load( ofToDataPath("Pierre3dscan.ply"),polymesh2);
-	//cout << "File load result = " << result << endl;
-
 	pcl::fromPCLPointCloud2(polymesh->cloud,*cloud);
-	
-	//meshraw = ofxPCL::toOF(cloud);
 	
 	std::cerr << "PointCloud before filtering: " << cloud->width * cloud->height 
 	<< " data points (" << pcl::getFieldsList (*cloud) << ")." << endl;
 	
 	ofxPCL::statisticalOutlierRemoval(cloud, 50, 1.0);
-	ofxPCL::downsample(cloud, ofVec3f(0.005f, 0.005f, 0.005f));
 
-	ofxPCL::normalEstimation(cloud, cloud_with_normals);
-
-	//mesh = ofxPCL::triangulate(cloud_with_normals, 0.025);
+	if(bDrawWireFrame) {
+		ofxPCL::downsample(cloud, ofVec3f(0.005f, 0.005f, 0.005f));
+		ofxPCL::normalEstimation(cloud, cloud_with_normals);
+	}
 
 	std::cerr << "PointCloud after filtering: " << cloud->width * cloud->height << " data points (" << pcl::getFieldsList (*cloud) << ")." << endl;
 	
@@ -220,7 +213,11 @@ void ofApp::loadPointCloud()
 	Face newface;
 	newface.x = 0;
 	newface.y = 0;
-	newface.mesh = ofxPCL::triangulate(cloud_with_normals, 0.025);//ofxPCL::toOF(cloud);
+	if(bDrawWireFrame) {
+		newface.mesh = ofxPCL::triangulate(cloud_with_normals, 0.025);
+	} else {
+		newface.mesh = ofxPCL::toOF(cloud);
+	}
 
 	newface.mesh.getColors().resize(newface.mesh.getNumVertices());
 
@@ -235,7 +232,11 @@ void ofApp::loadPointCloud()
 	}
 	cout << "min =" << min << endl;
 	//newface.mesh.setUsage( GL_DYNAMIC_DRAW );
-	newface.mesh.setMode(OF_PRIMITIVE_TRIANGLES);
+	if(bDrawWireFrame) {
+		newface.mesh.setMode(OF_PRIMITIVE_TRIANGLES);
+	} else {
+		newface.mesh.setMode(OF_PRIMITIVE_POINTS);
+	}
 	newface.mesh.enableColors();
 
 	faces.push_back(newface);
@@ -255,6 +256,12 @@ void ofApp::keyPressed(int key){
 	}
 	if(key == 'd') {
 		bDebugInfo = !bDebugInfo;
+	}
+	if(key == '1') {
+		bDrawWireFrame = true;
+	}
+	if(key == '2') {
+		bDrawWireFrame = false;
 	}
 }
 

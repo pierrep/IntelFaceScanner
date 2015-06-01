@@ -71,5 +71,5 @@ class ofApp : public ofBaseApp{
 		};
 
 		vector<Face> faces;
-		
+		bool bDrawWireFrame;
 };
